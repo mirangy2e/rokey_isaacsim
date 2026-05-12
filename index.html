@@ -1,86 +1,333 @@
-
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Isaac Sim 회전 순서 인터랙티브 설명</title>
 <style>
-  .root { padding: 1rem 0; font-size: 14px; color: var(--color-text-primary); }
-  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap:wrap; }
-  .tab { padding: 6px 16px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; font-size: 13px; color: var(--color-text-secondary); transition: all .15s; }
-  .tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); border-color: var(--color-border-primary); font-weight: 500; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: #f7f6f3;
+    color: #1a1a18;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  /* ── 헤더 ── */
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e0ded8;
+    padding: 20px 0 0;
+    text-align: center;
+  }
+  .page-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a18;
+    margin-bottom: 18px;
+    letter-spacing: -0.3px;
+  }
+
+  /* ── 탭 ── */
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 24px;
+  }
+  .tab {
+    padding: 9px 20px;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid #d0cec8;
+    border-bottom: none;
+    background: #f0ede8;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666460;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { background: #e8e5e0; color: #1a1a18; }
+  .tab.active {
+    background: #fff;
+    color: #1a1a18;
+    border-color: #c0beb8;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── 패널 ── */
   .panel { display: none; }
   .panel.active { display: block; }
-  .axis-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .axis-label { font-size: 12px; font-weight: 500; min-width: 20px; }
+
+  .panel-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 24px 0;
+  }
+
+  /* ── 섹션 타이틀 ── */
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #666460;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── 배지 ── */
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 10px;
+    border-radius: 99px;
+    font-weight: 500;
+  }
+  .badge-robot { background: #eaf3de; color: #27500a; border: 1px solid #b0d070; }
+  .badge-cam   { background: #e6f1fb; color: #0c447c; border: 1px solid #85b7eb; }
+
+  /* ── 리셋 버튼 ── */
+  .reset-btn {
+    font-size: 12px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: 1px solid #c0beb8;
+    background: #fff;
+    cursor: pointer;
+    color: #444441;
+    margin-bottom: 14px;
+    transition: background .1s;
+  }
+  .reset-btn:hover { background: #f0ede8; }
+
+  /* ── 슬라이더 행 ── */
+  .axis-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    background: #fff;
+    border: 1px solid #e0ded8;
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .axis-label {
+    font-size: 13px;
+    font-weight: 700;
+    min-width: 18px;
+    text-align: center;
+  }
   .axis-label.z { color: #185FA5; }
   .axis-label.y { color: #3B6D11; }
   .axis-label.x { color: #993C1D; }
-  input[type=range] { flex: 1; }
-  .val { font-size: 12px; min-width: 36px; text-align: right; color: var(--color-text-secondary); }
-  .name { font-size: 11px; color: var(--color-text-secondary); min-width: 90px; }
-  .step-row { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
-  .step-box { flex: 1; min-width: 110px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); padding: 10px 12px; background: var(--color-background-secondary); }
-  .step-num { font-size: 11px; color: var(--color-text-tertiary); margin-bottom: 2px; }
-  .step-title { font-size: 13px; font-weight: 500; }
-  .step-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  input[type=range] { flex: 1; accent-color: #555; height: 4px; }
+  .val {
+    font-size: 12px;
+    min-width: 36px;
+    text-align: right;
+    color: #444441;
+    font-variant-numeric: tabular-nums;
+  }
+  .name {
+    font-size: 11px;
+    color: #888780;
+    min-width: 110px;
+    text-align: right;
+  }
+
+  /* ── 캔버스 ── */
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid #e0ded8;
+    background: #fff;
+    margin: 12px 0;
+  }
+
+  /* ── 단계 카드 ── */
+  .step-row {
+    display: flex;
+    gap: 10px;
+    margin: 14px 0;
+    flex-wrap: wrap;
+  }
+  .step-box {
+    flex: 1;
+    min-width: 140px;
+    border-radius: 8px;
+    border: 1px solid #e0ded8;
+    padding: 12px 14px;
+    background: #fff;
+  }
   .step-box.z-step { border-left: 3px solid #185FA5; }
   .step-box.y-step { border-left: 3px solid #3B6D11; }
   .step-box.x-step { border-left: 3px solid #993C1D; }
-  .hint { font-size: 12px; color: var(--color-text-secondary); margin-top: 12px; line-height: 1.65; padding: 10px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); }
-  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 99px; margin-left: 6px; }
-  .badge.robot { background: var(--color-background-success); color: var(--color-text-success); }
-  .badge.cam { background: var(--color-background-info); color: var(--color-text-info); }
-  canvas { border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); display: block; width: 100%; }
-  .section-title { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--color-text-secondary); }
-  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
-  .compare-card { border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px; background: var(--color-background-secondary); }
-  .compare-card h4 { margin: 0 0 8px; font-size: 13px; font-weight: 500; }
-  .order-pill { display: flex; gap: 4px; margin-bottom: 8px; align-items:center; }
-  .pill { padding: 4px 10px; border-radius: 99px; font-size: 12px; font-weight: 500; }
-  .pill.z { background: #E6F1FB; color: #185FA5; }
-  .pill.y { background: #EAF3DE; color: #3B6D11; }
-  .pill.x { background: #FAECE7; color: #993C1D; }
-  @media (prefers-color-scheme: dark) {
-    .pill.z { background: #0C447C; color: #B5D4F4; }
-    .pill.y { background: #27500A; color: #C0DD97; }
-    .pill.x { background: #712B13; color: #F5C4B3; }
-  }
-  .arrow-sep { font-size: 12px; color: var(--color-text-tertiary); }
-  .reset-btn { font-size: 12px; padding: 4px 12px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: transparent; cursor: pointer; color: var(--color-text-secondary); margin-bottom: 10px; }
-</style>
+  .step-num { font-size: 11px; color: #888780; margin-bottom: 3px; }
+  .step-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .step-sub { font-size: 11px; color: #666460; line-height: 1.5; }
 
-<div class="root">
-  <h2 class="sr-only">Isaac Sim 회전 순서 인터랙티브 설명</h2>
+  /* ── 힌트 박스 ── */
+  .hint {
+    font-size: 12px;
+    color: #444441;
+    margin-top: 14px;
+    line-height: 1.7;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #e0ded8;
+    background: #faf9f7;
+  }
+  .hint strong { color: #1a1a18; }
+
+  /* ── 비교 그리드 ── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .compare-card {
+    border: 1px solid #e0ded8;
+    border-radius: 10px;
+    padding: 16px;
+    background: #fff;
+  }
+  .compare-card h4 { margin: 0 0 10px; font-size: 14px; font-weight: 600; }
+  .order-pill { display: flex; gap: 4px; margin-bottom: 10px; align-items: center; }
+  .pill {
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .pill.z { background: #e6f1fb; color: #185FA5; border-color: #b5d4f4; }
+  .pill.y { background: #eaf3de; color: #3B6D11; border-color: #c0dd97; }
+  .pill.x { background: #faece7; color: #993C1D; border-color: #f5c4b3; }
+  .arrow-sep { font-size: 13px; color: #c0beb8; }
+  .compare-detail { font-size: 12px; color: #444441; line-height: 1.9; }
+  .compare-detail strong { color: #1a1a18; }
+  .compare-sub { margin-top: 8px; font-size: 11px; color: #888780; line-height: 1.5; }
+
+  /* ── 비교 테이블 ── */
+  .compare-table-wrap {
+    margin-top: 18px;
+    border-radius: 10px;
+    border: 1px solid #e0ded8;
+    overflow: hidden;
+    background: #fff;
+  }
+  .compare-table-wrap table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .compare-table-wrap thead tr { background: #f5f3f0; }
+  .compare-table-wrap th {
+    padding: 10px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    border-bottom: 1px solid #e0ded8;
+    color: #444441;
+  }
+  .compare-table-wrap td {
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0ede8;
+    color: #1a1a18;
+  }
+  .compare-table-wrap tr:last-child td { border-bottom: none; }
+  .compare-table-wrap td:not(:first-child) { text-align: center; }
+  .th-z { color: #185FA5; }
+  .th-y { color: #3B6D11; }
+
+  /* ── ① 좌표계 카드 ── */
+  .concept-cards { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .concept-card {
+    flex: 1; min-width: 160px;
+    border-radius: 8px;
+    border: 1px solid #e0ded8;
+    padding: 12px 14px;
+    background: #fff;
+  }
+  .concept-card.x-card { border-left: 3px solid #993C1D; }
+  .concept-card.y-card { border-left: 3px solid #3B6D11; }
+  .concept-card.z-card { border-left: 3px solid #185FA5; background: #f5f9ff; }
+  .cc-label { font-size: 11px; color: #888780; margin-bottom: 3px; }
+  .cc-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .cc-sub { font-size: 11px; color: #666460; line-height: 1.5; }
+
+  /* 아래 버튼 */
+  .cta-btn {
+    display: block;
+    width: 100%;
+    margin-top: 16px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #c0beb8;
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    color: #444441;
+    text-align: center;
+    transition: background .1s;
+  }
+  .cta-btn:hover { background: #f0ede8; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Isaac Sim 회전 순서 인터랙티브 설명</h1>
   <div class="tabs">
     <button class="tab active" onclick="switchTab('concept',this)">① 좌표계 기초</button>
     <button class="tab" onclick="switchTab('zyx',this)">② ZYX (오브젝트)</button>
     <button class="tab" onclick="switchTab('yxz',this)">③ YXZ (카메라)</button>
     <button class="tab" onclick="switchTab('compare',this)">④ 비교 정리</button>
   </div>
+</div>
 
-  <!-- ① -->
-  <div id="panel-concept" class="panel active">
-    <p class="section-title">Isaac Sim의 3D 좌표계 — Z축이 위(Up)</p>
-    <canvas id="canvas-concept" height="280"></canvas>
-    <div class="step-row" style="margin-top:14px">
-      <div class="step-box x-step">
-        <div class="step-num">X 축</div>
-        <div class="step-title" style="color:#993C1D">앞/뒤 (Forward)</div>
-        <div class="step-sub">로봇이 전진하는 방향<br>Roll 회전축</div>
+<!-- ① 좌표계 기초 -->
+<div id="panel-concept" class="panel active">
+  <div class="panel-inner">
+    <div class="section-title">Isaac Sim의 3D 좌표계 — Z축이 위(Up)</div>
+    <canvas id="canvas-concept" height="260"></canvas>
+    <div class="concept-cards">
+      <div class="concept-card x-card">
+        <div class="cc-label">X 축</div>
+        <div class="cc-title" style="color:#993C1D">앞/뒤 (Forward)</div>
+        <div class="cc-sub">로봇이 전진하는 방향<br>Roll 회전축</div>
       </div>
-      <div class="step-box y-step">
-        <div class="step-num">Y 축</div>
-        <div class="step-title" style="color:#3B6D11">좌/우 (Left)</div>
-        <div class="step-sub">오른손 좌표계 기준 왼쪽<br>Pitch 회전축</div>
+      <div class="concept-card y-card">
+        <div class="cc-label">Y 축</div>
+        <div class="cc-title" style="color:#3B6D11">좌/우 (Left)</div>
+        <div class="cc-sub">오른손 좌표계 기준 왼쪽<br>Pitch 회전축</div>
       </div>
-      <div class="step-box z-step">
-        <div class="step-num">Z 축</div>
-        <div class="step-title" style="color:#185FA5">위/아래 (Up) ★</div>
-        <div class="step-sub">Isaac Sim 기본 Up-axis<br>Yaw 회전축</div>
+      <div class="concept-card z-card">
+        <div class="cc-label">Z 축</div>
+        <div class="cc-title" style="color:#185FA5">위/아래 (Up) ★</div>
+        <div class="cc-sub">Isaac Sim 기본 Up-axis<br>Yaw 회전축</div>
       </div>
     </div>
-    <div class="hint">💡 <strong>왜 Z가 위?</strong> — 로봇공학/드론 분야 표준(ROS 좌표계)입니다. Preferences &gt; Stage에서 <strong>Default Up Axis = Z</strong>로 설정된 이유가 여기 있습니다.</div>
+    <div class="hint">
+      💡 <strong>왜 Z가 위?</strong> — 로봇공학/드론 분야 표준(ROS 좌표계)입니다.
+      Preferences &gt; Stage에서 <strong>Default Up Axis = Z</strong>로 설정된 이유가 여기 있습니다.
+    </div>
   </div>
+</div>
 
-  <!-- ② ZYX : Z-up 등축뷰 -->
-  <div id="panel-zyx" class="panel">
-    <p class="section-title">ZYX 회전 순서 <span class="badge robot">오브젝트·로봇 기본값</span></p>
+<!-- ② ZYX -->
+<div id="panel-zyx" class="panel">
+  <div class="panel-inner">
+    <div class="section-title">
+      ZYX 회전 순서 <span class="badge badge-robot">오브젝트·로봇 기본값</span>
+    </div>
     <button class="reset-btn" onclick="resetZYX()">↺ 초기화</button>
     <div class="axis-row">
       <span class="axis-label z">Z</span>
@@ -101,7 +348,7 @@
       <span class="name">Roll (옆으로기울기)</span>
     </div>
     <canvas id="canvas-zyx" height="300"></canvas>
-    <div class="step-row" style="margin-top:10px">
+    <div class="step-row">
       <div class="step-box z-step">
         <div class="step-num">1단계</div>
         <div class="step-title" style="color:#185FA5">Z 회전 (Yaw)</div>
@@ -118,12 +365,18 @@
         <div class="step-sub">옆으로 기울이기<br>(좌우로 쓰러질 때)</div>
       </div>
     </div>
-    <div class="hint">🤖 <strong>Z 슬라이더</strong>를 움직이면 로봇이 바닥 위에서 제자리 회전합니다 — Yaw(방향 전환)가 바로 보입니다.</div>
+    <div class="hint">
+      🤖 <strong>Z 슬라이더</strong>를 움직이면 로봇이 바닥 위에서 제자리 회전합니다 — Yaw(방향 전환)가 바로 보입니다.
+    </div>
   </div>
+</div>
 
-  <!-- ③ YXZ : Y-up 뷰 + 카메라 형태 -->
-  <div id="panel-yxz" class="panel">
-    <p class="section-title">YXZ 회전 순서 <span class="badge cam">카메라 기본값</span></p>
+<!-- ③ YXZ -->
+<div id="panel-yxz" class="panel">
+  <div class="panel-inner">
+    <div class="section-title">
+      YXZ 회전 순서 <span class="badge badge-cam">카메라 기본값</span>
+    </div>
     <button class="reset-btn" onclick="resetYXZ()">↺ 초기화</button>
     <div class="axis-row">
       <span class="axis-label y">Y</span>
@@ -144,7 +397,7 @@
       <span class="name">Roll (기울어짐)</span>
     </div>
     <canvas id="canvas-yxz" height="300"></canvas>
-    <div class="step-row" style="margin-top:10px">
+    <div class="step-row">
       <div class="step-box y-step">
         <div class="step-num">1단계</div>
         <div class="step-title" style="color:#3B6D11">Y 회전 (Pan)</div>
@@ -161,145 +414,126 @@
         <div class="step-sub">수평선 기준으로<br>카메라 회전</div>
       </div>
     </div>
-    <div class="hint">📷 <strong>Z축 = 렌즈 방향(앞쪽).</strong> Y-up 뷰에서 Y(Pan)를 돌리면 카메라가 좌우로 스윙하고, X(Tilt)를 올리면 하늘·땅을 바라봅니다. Z-Roll은 수평선이 기울 때 씁니다.</div>
+    <div class="hint">
+      📷 <strong>Z축 = 렌즈 방향(앞쪽).</strong>
+      Y-up 뷰에서 Y(Pan)를 돌리면 카메라가 좌우로 스윙하고, X(Tilt)를 올리면 하늘·땅을 바라봅니다.
+      Z-Roll은 수평선이 기울 때 씁니다.
+    </div>
   </div>
+</div>
 
-  <!-- ④ 비교 -->
-  <div id="panel-compare" class="panel">
-    <p class="section-title">두 회전 순서 한눈에 비교</p>
+<!-- ④ 비교 정리 -->
+<div id="panel-compare" class="panel">
+  <div class="panel-inner">
+    <div class="section-title">두 회전 순서 한눈에 비교</div>
     <div class="compare-grid">
       <div class="compare-card">
         <h4>오브젝트 / 로봇</h4>
         <div class="order-pill">
-          <span class="pill z">Z</span><span class="arrow-sep">→</span>
-          <span class="pill y">Y</span><span class="arrow-sep">→</span>
+          <span class="pill z">Z</span>
+          <span class="arrow-sep">→</span>
+          <span class="pill y">Y</span>
+          <span class="arrow-sep">→</span>
           <span class="pill x">X</span>
         </div>
-        <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8">
-          <div>Z = <strong>Yaw</strong> (방향 전환)</div>
-          <div>Y = <strong>Pitch</strong> (앞뒤 기울기)</div>
-          <div>X = <strong>Roll</strong> (좌우 기울기)</div>
+        <div class="compare-detail">
+          Z = <strong>Yaw</strong> (방향 전환)<br>
+          Y = <strong>Pitch</strong> (앞뒤 기울기)<br>
+          X = <strong>Roll</strong> (좌우 기울기)
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--color-text-tertiary)">주행로봇, 매니퓰레이터, 일반 오브젝트<br>Z-up 뷰 / Z가 위</div>
+        <div class="compare-sub">주행로봇, 매니퓰레이터, 일반 오브젝트<br>Z-up 뷰 / Z가 위</div>
       </div>
       <div class="compare-card">
         <h4>카메라</h4>
         <div class="order-pill">
-          <span class="pill y">Y</span><span class="arrow-sep">→</span>
-          <span class="pill x">X</span><span class="arrow-sep">→</span>
+          <span class="pill y">Y</span>
+          <span class="arrow-sep">→</span>
+          <span class="pill x">X</span>
+          <span class="arrow-sep">→</span>
           <span class="pill z">Z</span>
         </div>
-        <div style="font-size:12px;color:var(--color-text-secondary);line-height:1.8">
-          <div>Y = <strong>Pan</strong> (좌우 스윙)</div>
-          <div>X = <strong>Tilt</strong> (상하 각도)</div>
-          <div>Z = <strong>Roll / 렌즈 방향</strong></div>
+        <div class="compare-detail">
+          Y = <strong>Pan</strong> (좌우 스윙)<br>
+          X = <strong>Tilt</strong> (상하 각도)<br>
+          Z = <strong>Roll / 렌즈 방향</strong>
         </div>
-        <div style="margin-top:8px;font-size:11px;color:var(--color-text-tertiary)">카메라 센서, 뷰포트 카메라<br>Y-up 뷰 / Z가 앞(렌즈)</div>
+        <div class="compare-sub">카메라 센서, 뷰포트 카메라<br>Y-up 뷰 / Z가 앞(렌즈)</div>
       </div>
     </div>
-    <div style="margin-top:16px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);overflow:hidden">
-      <table style="width:100%;border-collapse:collapse;font-size:12px">
+
+    <div class="compare-table-wrap">
+      <table>
         <thead>
-          <tr style="background:var(--color-background-secondary)">
-            <th style="padding:8px 12px;text-align:left;font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary)">구분</th>
-            <th style="padding:8px 12px;text-align:center;font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary);color:#185FA5">ZYX (로봇)</th>
-            <th style="padding:8px 12px;text-align:center;font-weight:500;border-bottom:0.5px solid var(--color-border-tertiary);color:#3B6D11">YXZ (카메라)</th>
+          <tr>
+            <th>구분</th>
+            <th class="th-z">ZYX (로봇)</th>
+            <th class="th-y">YXZ (카메라)</th>
           </tr>
         </thead>
         <tbody>
-          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
-            <td style="padding:8px 12px;color:var(--color-text-secondary)">Up 축</td>
-            <td style="padding:8px 12px;text-align:center">Z (위)</td>
-            <td style="padding:8px 12px;text-align:center">Y (위)</td>
-          </tr>
-          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
-            <td style="padding:8px 12px;color:var(--color-text-secondary)">렌즈/앞 방향</td>
-            <td style="padding:8px 12px;text-align:center">X</td>
-            <td style="padding:8px 12px;text-align:center">Z</td>
-          </tr>
-          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
-            <td style="padding:8px 12px;color:var(--color-text-secondary)">1순위 회전</td>
-            <td style="padding:8px 12px;text-align:center"><span class="pill z" style="font-size:11px">Z Yaw</span></td>
-            <td style="padding:8px 12px;text-align:center"><span class="pill y" style="font-size:11px">Y Pan</span></td>
-          </tr>
-          <tr style="border-bottom:0.5px solid var(--color-border-tertiary)">
-            <td style="padding:8px 12px;color:var(--color-text-secondary)">Gimbal Lock</td>
-            <td style="padding:8px 12px;text-align:center">Y = ±90° 시</td>
-            <td style="padding:8px 12px;text-align:center">X = ±90° 시</td>
-          </tr>
+          <tr><td>Up 축</td><td>Z (위)</td><td>Y (위)</td></tr>
+          <tr><td>렌즈/앞 방향</td><td>X</td><td>Z</td></tr>
           <tr>
-            <td style="padding:8px 12px;color:var(--color-text-secondary)">ROS2 대응</td>
-            <td style="padding:8px 12px;text-align:center">roll/pitch/yaw</td>
-            <td style="padding:8px 12px;text-align:center">pan/tilt/roll</td>
+            <td>1순위 회전</td>
+            <td><span class="pill z" style="font-size:11px">Z Yaw</span></td>
+            <td><span class="pill y" style="font-size:11px">Y Pan</span></td>
           </tr>
+          <tr><td>Gimbal Lock</td><td>Y = ±90° 시</td><td>X = ±90° 시</td></tr>
+          <tr><td>ROS2 대응</td><td>roll/pitch/yaw</td><td>pan/tilt/roll</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="hint" style="margin-top:14px">
-      ⚠️ <strong>실습 주의:</strong> Properties에서 Euler로 회전값 입력 시 ZYX 순서가 적용됩니다. 예상과 다른 방향으로 움직이면 순서를 먼저 확인하세요.<br><br>
+
+    <div class="hint" style="margin-top:16px">
+      ⚠️ <strong>실습 주의:</strong> Properties에서 Euler로 회전값 입력 시 ZYX 순서가 적용됩니다.
+      예상과 다른 방향으로 움직이면 순서를 먼저 확인하세요.<br><br>
       📌 <strong>실무 팁:</strong> 복잡한 회전은 Quaternion으로 지정하면 회전 순서 문제를 원천 차단할 수 있습니다.
     </div>
-    <button style="margin-top:12px;width:100%;padding:8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;font-size:13px;color:var(--color-text-secondary)" onclick="sendPrompt('Isaac Sim에서 로봇의 orientation을 Quaternion으로 지정하는 방법을 알려줘')"></button>
   </div>
 </div>
 
 <script>
 const D2R = Math.PI / 180;
-function isDark() { return matchMedia('(prefers-color-scheme: dark)').matches; }
 
 function switchTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
-  if (name==='concept') drawConcept();
-  if (name==='zyx') drawZYX();
-  if (name==='yxz') drawYXZ();
+  setTimeout(() => {
+    if (name === 'concept') drawConcept();
+    if (name === 'zyx') drawZYX();
+    if (name === 'yxz') drawYXZ();
+  }, 10);
 }
 
-// ── 행렬 ──────────────────────────────────
 function mul(a,b){const r=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];for(let i=0;i<4;i++)for(let j=0;j<4;j++)for(let k=0;k<4;k++)r[i][j]+=a[i][k]*b[k][j];return r;}
 const Rz=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,-s,0,0],[s,c,0,0],[0,0,1,0],[0,0,0,1]];};
 const Ry=a=>{const c=Math.cos(a),s=Math.sin(a);return[[c,0,s,0],[0,1,0,0],[-s,0,c,0],[0,0,0,1]];};
 const Rx=a=>{const c=Math.cos(a),s=Math.sin(a);return[[1,0,0,0],[0,c,-s,0],[0,s,c,0],[0,0,0,1]];};
 function applyM(m,v){return{x:m[0][0]*v.x+m[0][1]*v.y+m[0][2]*v.z,y:m[1][0]*v.x+m[1][1]*v.y+m[1][2]*v.z,z:m[2][0]*v.x+m[2][1]*v.y+m[2][2]*v.z};}
 
-// ── Z-up 투영 (로봇용) ─────────────────────
-// az=225°, el=30° → Z 수직 위, XY 바닥
-const AZ_R=225*D2R, EL_R=30*D2R;
+/* Z-up 투영 */
+const AZ_R=225*D2R,EL_R=30*D2R;
 const sAR=Math.sin(AZ_R),cAR=Math.cos(AZ_R),sER=Math.sin(EL_R),cER=Math.cos(EL_R);
-const CAMR={rx:cAR,ry:sAR,rz:0, ux:-sAR*sER,uy:cAR*sER,uz:cER};
-
+const CAMR={rx:cAR,ry:sAR,rz:0,ux:-sAR*sER,uy:cAR*sER,uz:cER};
 function projR(x,y,z,cx,cy,sc){
-  const px=CAMR.rx*x+CAMR.ry*y+CAMR.rz*z;
-  const py=CAMR.ux*x+CAMR.uy*y+CAMR.uz*z;
-  return{px:cx+px*sc, py:cy-py*sc};
+  return{px:cx+(CAMR.rx*x+CAMR.ry*y)*sc, py:cy-(CAMR.ux*x+CAMR.uy*y+CAMR.uz*z)*sc};
 }
 
-// ── Y-up 투영 (카메라용) ───────────────────
-// Y가 위, Z가 앞(렌즈), X가 오른쪽
-// 카메라 시점: 살짝 오른쪽 위에서 바라봄 (az=25°, el=18°)
-// Y-up 좌표계에서: up=Y, right=X, forward=Z
-const AZ_C=25*D2R, EL_C=18*D2R;
+/* Y-up 투영 */
+const AZ_C=25*D2R,EL_C=18*D2R;
 const sAC=Math.sin(AZ_C),cAC=Math.cos(AZ_C),sEC=Math.sin(EL_C),cEC=Math.cos(EL_C);
-// Y-up 카메라 행렬:
-// Right(screen x) = (cosAz, 0, -sinAz) in XYZ
-// Up(screen y)    = (sinAz*sinEl, cosEl, cosAz*sinEl) in XYZ
-const CAMC={
-  rx: cAC,          ry: 0,    rz: -sAC,
-  ux: sAC*sEC,      uy: cEC,  uz: cAC*sEC
-};
-
+const CAMC={rx:cAC,ry:0,rz:-sAC,ux:sAC*sEC,uy:cEC,uz:cAC*sEC};
 function projC(x,y,z,cx,cy,sc){
   const px=CAMC.rx*x+CAMC.ry*y+CAMC.rz*z;
   const py=CAMC.ux*x+CAMC.uy*y+CAMC.uz*z;
-  return{px:cx+px*sc, py:cy-py*sc};
+  return{px:cx+px*sc,py:cy-py*sc};
 }
 
-// ── 화살표 그리기 ──────────────────────────
 function drawArrow(ctx,ox,oy,ex,ey,col,label,lw){
   const dx=ex-ox,dy=ey-oy,l=Math.hypot(dx,dy)||1;
-  ctx.strokeStyle=col; ctx.lineWidth=lw||2; ctx.setLineDash([]);
+  ctx.strokeStyle=col;ctx.lineWidth=lw||2;ctx.setLineDash([]);
   ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ex,ey);ctx.stroke();
   const hw=6,hl=12;
   ctx.fillStyle=col;
@@ -313,10 +547,8 @@ function drawArrow(ctx,ox,oy,ex,ey,col,label,lw){
   ctx.fillText(label,ex+dx/l*20,ey+dy/l*20);
 }
 
-// ── Z-up 그리드 ────────────────────────────
 function drawGridR(ctx,cx,cy,sc){
-  const gc=isDark()?'#3a3a38':'#dedad4';
-  ctx.strokeStyle=gc;ctx.lineWidth=0.5;ctx.setLineDash([]);
+  ctx.strokeStyle='#dedad4';ctx.lineWidth=0.5;ctx.setLineDash([]);
   const N=5,S=0.26;
   for(let i=-N;i<=N;i++){
     const a=projR(i*S,-N*S,0,cx,cy,sc),b=projR(i*S,N*S,0,cx,cy,sc);
@@ -326,10 +558,8 @@ function drawGridR(ctx,cx,cy,sc){
   }
 }
 
-// ── Y-up 그리드 (XZ 평면, y=0) ─────────────
 function drawGridC(ctx,cx,cy,sc){
-  const gc=isDark()?'#3a3a38':'#dedad4';
-  ctx.strokeStyle=gc;ctx.lineWidth=0.5;ctx.setLineDash([]);
+  ctx.strokeStyle='#dedad4';ctx.lineWidth=0.5;ctx.setLineDash([]);
   const N=5,S=0.26;
   for(let i=-N;i<=N;i++){
     const a=projC(i*S,0,-N*S,cx,cy,sc),b=projC(i*S,0,N*S,cx,cy,sc);
@@ -339,7 +569,6 @@ function drawGridC(ctx,cx,cy,sc){
   }
 }
 
-// ── 로봇 박스 + 로컬 축 (Z-up) ────────────
 function drawRobot(ctx,cx,cy,sc,mat){
   const bx=0.30,by=0.16,bz=0.09;
   const corners=[
@@ -348,11 +577,9 @@ function drawRobot(ctx,cx,cy,sc,mat){
   ];
   const rc=corners.map(v=>{const rv=applyM(mat,v);return projR(rv.x,rv.y,rv.z,cx,cy,sc);});
   const faces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[0,3,7,4]];
-  const fc=isDark()
-    ?['#4a7a9b66','#2a4a6b44','#5a8aab88','#3a5a8b55','#3a6a9055','#3a6a9055']
-    :['#a0c4e088','#6090b855','#b0d0ecaa','#8ab0d066','#90b8cc66','#90b8cc66'];
+  const fc=['#a0c4e088','#6090b855','#b0d0ecaa','#8ab0d066','#90b8cc66','#90b8cc66'];
   faces.forEach((f,i)=>{
-    ctx.fillStyle=fc[i];ctx.strokeStyle=isDark()?'#5a8aab99':'#4080a877';ctx.lineWidth=0.8;ctx.setLineDash([]);
+    ctx.fillStyle=fc[i];ctx.strokeStyle='#4080a877';ctx.lineWidth=0.8;ctx.setLineDash([]);
     ctx.beginPath();ctx.moveTo(rc[f[0]].px,rc[f[0]].py);
     for(let k=1;k<f.length;k++)ctx.lineTo(rc[f[k]].px,rc[f[k]].py);
     ctx.closePath();ctx.fill();ctx.stroke();
@@ -361,123 +588,73 @@ function drawRobot(ctx,cx,cy,sc,mat){
   [{v:{x:0.55,y:0,z:0},col:'#993C1D',label:'X',lw:3},
    {v:{x:0,y:0.45,z:0},col:'#3B6D11',label:'Y',lw:2},
    {v:{x:0,y:0,z:0.45},col:'#185FA5',label:'Z',lw:2.5}].forEach(a=>{
-    const rv=applyM(mat,a.v);const e=projR(rv.x,rv.y,rv.z,cx,cy,sc);
+    const rv=applyM(mat,a.v),e=projR(rv.x,rv.y,rv.z,cx,cy,sc);
     drawArrow(ctx,o.px,o.py,e.px,e.py,a.col,a.label,a.lw);
   });
 }
 
-// ── 카메라 형태 (Y-up, Z=렌즈 방향) ─────────
-// 카메라 로컬 좌표: X=오른쪽, Y=위, Z=렌즈(앞)
 function drawCamera(ctx,cx,cy,sc,mat){
-  const dark=isDark();
-
-  // 카메라 바디: X[-0.22,0.22] Y[-0.14,0.14] Z[-0.05,0.18]
   const bx=0.22,by=0.14,bzB=-0.05,bzF=0.18;
   const bodyCorners=[
     {x:bx,y:by,z:bzF},{x:bx,y:-by,z:bzF},{x:-bx,y:-by,z:bzF},{x:-bx,y:by,z:bzF},
     {x:bx,y:by,z:bzB},{x:bx,y:-by,z:bzB},{x:-bx,y:-by,z:bzB},{x:-bx,y:by,z:bzB},
   ];
   const bc=bodyCorners.map(v=>{const rv=applyM(mat,v);return projC(rv.x,rv.y,rv.z,cx,cy,sc);});
-
-  // 렌즈 후드 (Z+ 방향 원통 → 팔각형으로 근사)
   const lensR=0.10,lensZ=0.34,lensSegs=8;
-  const lensRing=[];
+  const lensRing=[],lensBase=[];
   for(let i=0;i<lensSegs;i++){
     const a=i/lensSegs*Math.PI*2;
     lensRing.push({x:Math.cos(a)*lensR,y:Math.sin(a)*lensR,z:lensZ});
-  }
-  const lensBase=[];
-  for(let i=0;i<lensSegs;i++){
-    const a=i/lensSegs*Math.PI*2;
     lensBase.push({x:Math.cos(a)*lensR*0.85,y:Math.sin(a)*lensR*0.85,z:bzF});
   }
   const lp=lensRing.map(v=>{const rv=applyM(mat,v);return projC(rv.x,rv.y,rv.z,cx,cy,sc);});
   const lpB=lensBase.map(v=>{const rv=applyM(mat,v);return projC(rv.x,rv.y,rv.z,cx,cy,sc);});
-
-  // 핫슈 (위쪽 돌출) - Y+ 방향
-  const shoeVerts=[
-    {x:0.06,y:0.14,z:0.04},{x:0.06,y:0.20,z:0.04},
-    {x:-0.06,y:0.20,z:0.04},{x:-0.06,y:0.14,z:0.04},
-    {x:0.06,y:0.14,z:-0.04},{x:0.06,y:0.20,z:-0.04},
-    {x:-0.06,y:0.20,z:-0.04},{x:-0.06,y:0.14,z:-0.04},
-  ];
-  const sh=shoeVerts.map(v=>{const rv=applyM(mat,v);return projC(rv.x,rv.y,rv.z,cx,cy,sc);});
-
-  // 바디 면 그리기
-  const bodyFaces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[0,3,7,4]];
-  const bfc=dark
-    ?['#5a6a7a88','#3a4a5a55','#6a7a8aaa','#4a5a6a66','#5a6a7a66','#5a6a7a66']
-    :['#8899aa88','#6677884f','#99aabba8','#7788996f','#8899aa66','#8899aa66'];
-  bodyFaces.forEach((f,i)=>{
-    ctx.fillStyle=bfc[i];ctx.strokeStyle=dark?'#7a8a9a99':'#5566778f';ctx.lineWidth=0.8;ctx.setLineDash([]);
+  const faces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[1,2,6,5],[0,3,7,4]];
+  const fc=['#8899aa88','#6677884f','#99aabba8','#7788996f','#8899aa66','#8899aa66'];
+  faces.forEach((f,i)=>{
+    ctx.fillStyle=fc[i];ctx.strokeStyle='#5566778f';ctx.lineWidth=0.8;ctx.setLineDash([]);
     ctx.beginPath();ctx.moveTo(bc[f[0]].px,bc[f[0]].py);
     for(let k=1;k<f.length;k++)ctx.lineTo(bc[f[k]].px,bc[f[k]].py);
     ctx.closePath();ctx.fill();ctx.stroke();
   });
-
-  // 핫슈
-  const shFaces=[[0,1,2,3],[4,5,6,7],[0,1,5,4],[2,3,7,6],[0,3,7,4]];
-  shFaces.forEach(f=>{
-    ctx.fillStyle=dark?'#4a5a6a99':'#7788aaaa';
-    ctx.strokeStyle=dark?'#6a7a8a':'#667799';ctx.lineWidth=0.6;
-    ctx.beginPath();ctx.moveTo(sh[f[0]].px,sh[f[0]].py);
-    for(let k=1;k<f.length;k++)ctx.lineTo(sh[f[k]].px,sh[f[k]].py);
-    ctx.closePath();ctx.fill();ctx.stroke();
-  });
-
-  // 렌즈 측면 (사다리꼴 스트립)
   for(let i=0;i<lensSegs;i++){
     const j=(i+1)%lensSegs;
-    ctx.fillStyle=dark?'#303844cc':'#556677bb';
-    ctx.strokeStyle=dark?'#4a5a6a':'#445566';ctx.lineWidth=0.5;
-    ctx.beginPath();
-    ctx.moveTo(lpB[i].px,lpB[i].py);ctx.lineTo(lpB[j].px,lpB[j].py);
+    ctx.fillStyle='#556677bb';ctx.strokeStyle='#445566';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(lpB[i].px,lpB[i].py);ctx.lineTo(lpB[j].px,lpB[j].py);
     ctx.lineTo(lp[j].px,lp[j].py);ctx.lineTo(lp[i].px,lp[i].py);
     ctx.closePath();ctx.fill();ctx.stroke();
   }
-
-  // 렌즈 앞면 (원형 유리)
   ctx.beginPath();
   lp.forEach((p,i)=>i===0?ctx.moveTo(p.px,p.py):ctx.lineTo(p.px,p.py));
-  ctx.closePath();
-  ctx.fillStyle=dark?'#1a2a4aee':'#2244aacc';
-  ctx.strokeStyle=dark?'#3a5a8a':'#2255aa';ctx.lineWidth=1.2;
-  ctx.fill();ctx.stroke();
-
-  // 렌즈 반사광 (작은 흰 타원)
+  ctx.closePath();ctx.fillStyle='#2244aacc';ctx.strokeStyle='#2255aa';ctx.lineWidth=1.2;ctx.fill();ctx.stroke();
   const lc_rv=applyM(mat,{x:0.03,y:0.04,z:lensZ});
   const lc=projC(lc_rv.x,lc_rv.y,lc_rv.z,cx,cy,sc);
-  ctx.fillStyle='rgba(255,255,255,0.35)';
+  ctx.fillStyle='rgba(255,255,255,0.4)';
   ctx.beginPath();ctx.ellipse(lc.px,lc.py,5,3,0,0,Math.PI*2);ctx.fill();
-
-  // ── 로컬 축 화살표 (카메라 기준) ──────────
-  // X=오른쪽, Y=위, Z=렌즈(앞)
   const o=projC(0,0,0,cx,cy,sc);
   [{v:{x:0.50,y:0,z:0},col:'#993C1D',label:'X',lw:2.5},
    {v:{x:0,y:0.50,z:0},col:'#3B6D11',label:'Y(Up)',lw:2.5},
    {v:{x:0,y:0,z:0.55},col:'#185FA5',label:'Z(렌즈)',lw:3}].forEach(a=>{
-    const rv=applyM(mat,a.v);const e=projC(rv.x,rv.y,rv.z,cx,cy,sc);
+    const rv=applyM(mat,a.v),e=projC(rv.x,rv.y,rv.z,cx,cy,sc);
     drawArrow(ctx,o.px,o.py,e.px,e.py,a.col,a.label,a.lw);
   });
 }
 
-// ── ① 개념 ─────────────────────────────────
+function getW(id){ return document.getElementById(id).offsetWidth||600; }
+
 function drawConcept(){
   const cv=document.getElementById('canvas-concept');
-  const W=cv.offsetWidth||600;cv.width=W;cv.height=280;
-  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,280);
-  const cx=W*0.48,cy=200,sc=100;
+  const W=getW('canvas-concept');cv.width=W;cv.height=260;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,260);
+  const cx=W*0.48,cy=195,sc=95;
   drawGridR(ctx,cx,cy,sc);
-  // 월드 축
   const o=projR(0,0,0,cx,cy,sc);
   [{v:{x:1.1,y:0,z:0},col:'#993C1D',label:'X'},{v:{x:0,y:1.1,z:0},col:'#3B6D11',label:'Y'},{v:{x:0,y:0,z:1.1},col:'#185FA5',label:'Z'}]
   .forEach(a=>{const e=projR(a.v.x,a.v.y,a.v.z,cx,cy,sc);drawArrow(ctx,o.px,o.py,e.px,e.py,a.col,a.label,2.5);});
-  const tc=isDark()?'#9c9a92':'#73726c';
-  ctx.fillStyle=tc;ctx.font='12px sans-serif';ctx.textAlign='center';
-  ctx.fillText('Isaac Sim 좌표계 — Z is UP (ROS2 표준)',cx,270);
+  ctx.fillStyle='#888780';ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('Isaac Sim 좌표계 — Z is UP (ROS2 표준)',cx,252);
 }
 
-// ── ② ZYX ──────────────────────────────────
 function drawZYX(){
   const rz=parseInt(document.getElementById('rz').value);
   const ry=parseInt(document.getElementById('ry').value);
@@ -487,17 +664,15 @@ function drawZYX(){
   document.getElementById('vx').textContent=rx+'°';
   const mat=mul(mul(Rz(rz*D2R),Ry(ry*D2R)),Rx(rx*D2R));
   const cv=document.getElementById('canvas-zyx');
-  const W=cv.offsetWidth||600;cv.width=W;cv.height=300;
+  const W=getW('canvas-zyx');cv.width=W;cv.height=300;
   const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,300);
   const cx=W*0.48,cy=210,sc=100;
   drawGridR(ctx,cx,cy,sc);
   drawRobot(ctx,cx,cy,sc,mat);
-  const tc=isDark()?'#9c9a92':'#73726c';
-  ctx.fillStyle=tc;ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='#888780';ctx.font='12px sans-serif';ctx.textAlign='center';
   ctx.fillText('Z:'+rz+'°  Y:'+ry+'°  X:'+rx+'°   (ZYX 순 적용)',cx,292);
 }
 
-// ── ③ YXZ ──────────────────────────────────
 function drawYXZ(){
   const ry=parseInt(document.getElementById('cy').value);
   const rx=parseInt(document.getElementById('cx').value);
@@ -507,19 +682,23 @@ function drawYXZ(){
   document.getElementById('cvz').textContent=rz+'°';
   const mat=mul(mul(Ry(ry*D2R),Rx(rx*D2R)),Rz(rz*D2R));
   const cv=document.getElementById('canvas-yxz');
-  const W=cv.offsetWidth||600;cv.width=W;cv.height=300;
+  const W=getW('canvas-yxz');cv.width=W;cv.height=300;
   const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,300);
   const cx=W*0.48,cy=200,sc=100;
   drawGridC(ctx,cx,cy,sc);
   drawCamera(ctx,cx,cy,sc,mat);
-  const tc=isDark()?'#9c9a92':'#73726c';
-  ctx.fillStyle=tc;ctx.font='12px sans-serif';ctx.textAlign='center';
+  ctx.fillStyle='#888780';ctx.font='12px sans-serif';ctx.textAlign='center';
   ctx.fillText('Y:'+ry+'°  X:'+rx+'°  Z:'+rz+'°   (YXZ 순 적용)',cx,292);
 }
 
 function resetZYX(){['rz','ry','rx'].forEach(id=>document.getElementById(id).value=0);drawZYX();}
 function resetYXZ(){['cy','cx','cz'].forEach(id=>document.getElementById(id).value=0);drawYXZ();}
 
-window.addEventListener('load',()=>{drawConcept();setTimeout(()=>{drawZYX();drawYXZ();},80);});
+window.addEventListener('load',()=>{
+  drawConcept();
+  setTimeout(()=>{drawZYX();drawYXZ();},80);
+});
 window.addEventListener('resize',()=>{drawConcept();drawZYX();drawYXZ();});
 </script>
+</body>
+</html>
